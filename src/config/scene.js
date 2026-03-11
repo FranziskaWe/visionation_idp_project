@@ -3,6 +3,34 @@ export const PANORAMA_POSES = {
     id: "livingRoom",
     name: "Living Room",
     panorama: "/assets/panoramas/LivingRoom1.jpeg",
+    position: [0, 0, 0],
+    rotationDeg: [0, 90, 0],
+  },
+  kitchen: {
+    id: "kitchen",
+    name: "Kitchen",
+    panorama: "/assets/panoramas/Kitchen1.jpeg",
+    position: [2.4, 0, -3.1],
+    rotationDeg: [0, 90, 0],
+  },
+};
+
+export const DEFAULT_PANORAMA_ID = "livingRoom";
+
+export const FULL_SCENE_MODEL = {
+  url: "/assets/full_model.glb",
+  transform: {
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: 1,
+  },
+};
+
+/*export const PANORAMA_POSES = {
+  livingRoom: {
+    id: "livingRoom",
+    name: "Living Room",
+    panorama: "/assets/panoramas/LivingRoom1.jpeg",
     // World-space capture pose of this panorama camera.
     // position: [x, y, z] => [left/right, up/down, forward/back]
     position: [0, 0, 0],
@@ -79,6 +107,15 @@ export const SOFA_VARIANTS = {
   }),
 };
 
+export const FULL_SCENE_MODEL = {
+  url: "/assets/full_model.glb",
+  transform: {
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: 1,
+  },
+};
+
 export const DEFAULT_SOFA_VARIANT = "green";
 
 export const DECOR_MODELS = {
@@ -101,3 +138,4 @@ export const DECOR_MODELS = {
   //   url: "/models/LR_TV_Wall.glb",
   // }),
 };
+*/

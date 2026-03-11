@@ -11,6 +11,7 @@ export function createCore(container) {
     RENDER_SETTINGS.far
   );
   camera.position.set(0, 0, 0);
+  camera.lookAt(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
