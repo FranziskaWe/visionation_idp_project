@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate:model": "node scripts/generate-sample-glb.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
