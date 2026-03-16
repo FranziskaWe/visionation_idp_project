@@ -10,16 +10,21 @@
     <div id="ui">
       <div id="hud">
         <h1>Visionation VR Walkthrough</h1>
-        <p>One living-room panorama with a swappable sofa model.</p>
-        <p>Drag to look around. Press <strong>M</strong> for sofa and <strong>N</strong> for room, or use buttons.</p>
+        <p>Panorama viewer for room-to-room walkthrough.</p>
+        <p>Drag to look around. Press <strong>N</strong> for room and <strong>B</strong> for style, or use controls.</p>
         <div id="room-name">Living Room</div>
-        <div id="sofa-row">
-          <span id="sofa-label">Green Sofa</span>
-          <button id="switch-sofa" type="button">Switch Sofa</button>
+        <div id="room-row">
           <button id="switch-room" type="button">Switch Room</button>
         </div>
+        <div id="style-row">
+          <select id="style-select" aria-label="Select panorama style">
+            <option value="s1">Style: Classic</option>
+            <option value="s2">Style: Modern</option>
+          </select>
+        </div>
+        <div id="xr-diagnostics">XR diagnostics: checking...</div>
+        </div>
       </div>
-    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

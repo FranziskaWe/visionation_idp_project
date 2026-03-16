@@ -76,22 +76,19 @@ canvas {
   color: var(--warm);
 }
 
-#sofa-row {
+#room-row {
   margin-top: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  flex-wrap: wrap;
 }
 
-#sofa-label {
-  font-size: 0.92rem;
-  letter-spacing: 0.04em;
+#style-row {
+  margin-top: 0.65rem;
 }
 
-#switch-sofa,
-#switch-room {
+#switch-room,
+#style-select {
   pointer-events: auto;
+  width: 170px;
+  height: 38px;
   border: none;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
@@ -99,13 +96,23 @@ canvas {
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.03em;
-  padding: 0.45rem 0.85rem;
+  padding: 0 0.85rem;
+  appearance: none;
   cursor: pointer;
+  text-align: center;
 }
 
-#switch-sofa:hover,
-#switch-room:hover {
+#switch-room:hover,
+#style-select:hover {
   filter: brightness(1.05);
+}
+
+#xr-diagnostics {
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: rgba(230, 240, 255, 0.88);
+  white-space: pre-line;
 }
 
 .vr-button {

@@ -27,7 +27,11 @@ If immersive mode does not appear, use HTTPS dev mode:
 - VR: enter with the `VR` button (`VRButton`).
 
 ## Assets Used
-- Panorama: `public/assets/panoramas/LivingRoom1.jpeg`
+- Panorama styles:
+  - `public/assets/panoramas/s1_LivingRoom.jpeg`
+  - `public/assets/panoramas/s1_Kitchen.jpeg`
+  - `public/assets/panoramas/s2_LivingRoom.jpeg`
+  - `public/assets/panoramas/s2_Kitchen.jpeg`
 - Green sofa: `public/models/LR_Sofa_Green.glb`
 - Wooden sofa: `public/models/LR_Sofa_Wooden.glb`
 
@@ -44,3 +48,4 @@ If immersive mode does not appear, use HTTPS dev mode:
 - Model switching does not rebuild the scene. It only swaps visible GLB via `setModel`.
 - If sofa placement needs tuning, edit position/rotation/scale in `src/config/scene.js`.
 - Shared coordinates are configured in `PANORAMA_POSES` + `FURNITURE_ANCHORS_WORLD` in `src/config/scene.js`.
+- Switch between styles by changing `PANORAMA_STYLE` in `src/config/scene.js` (`"s1"` or `"s2"`).
