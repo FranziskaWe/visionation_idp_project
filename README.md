@@ -1,10 +1,10 @@
 # Visionation WebXR Living Room Scene
 
 A beginner-friendly Vite + vanilla JS + Three.js WebXR project with:
-- one reusable panorama sphere,
-- one living-room panorama,
-- one sofa model shown by default (green),
-- one-click model switch to beige.
+- 1 reusable panorama sphere,
+- 2 styles: classic, modern,
+- each style covers 4 spaces: kitchen (1 pano), living room (3 panos), hallway (2 panos), bedroom (3 panos),
+- 1 transparent full-house GLB overlay for collision/raycasting only.
 
 This is monoscopic 360 (3DoF) and Quest 3 ready through `VRButton`.
 
@@ -22,30 +22,23 @@ If immersive mode does not appear, use HTTPS dev mode:
 
 ## Controls
 - Desktop/Mobile: drag to look around.
-- Switch sofa: click `Switch Sofa` button or press `M`.
 - Switch panorama pose: press `N`.
 - VR: enter with the `VR` button (`VRButton`).
 
 ## Assets Used
-- Panorama styles:
-  - `public/assets/panoramas/s1_LivingRoom.jpeg`
-  - `public/assets/panoramas/s1_Kitchen.jpeg`
-  - `public/assets/panoramas/s2_LivingRoom.jpeg`
-  - `public/assets/panoramas/s2_Kitchen.jpeg`
-- Green sofa: `public/models/LR_Sofa_Green.glb`
-- Wooden sofa: `public/models/LR_Sofa_Wooden.glb`
+- Naming convention of panorama file: 
+  `{style_index}_{space}{index_in_space}.jpeg`
 
 ## Main Files
-- `src/config/scene.js` single-scene and sofa-variant config.
-- `src/main.js` app wiring and sofa switch logic.
+- `src/config/scene.js` single-scene
+- `src/main.js` app wiring, panorama switching, collision house model setup.
 - `src/pano/*` panorama sphere + texture manager.
-- `src/models/*` GLB loader + model manager.
+- `src/models/loadGLB.js` GLB loader used for the transparent collision house model.
 - `src/xr/*` WebXR button + controllers.
 - `src/navigation/lookControls.js` drag-to-look controls.
 
 ## Notes For Beginners
 - The panorama sphere is created once in `src/pano/createPanoSphere.js`.
-- Model switching does not rebuild the scene. It only swaps visible GLB via `setModel`.
-- If sofa placement needs tuning, edit position/rotation/scale in `src/config/scene.js`.
-- Shared coordinates are configured in `PANORAMA_POSES` + `FURNITURE_ANCHORS_WORLD` in `src/config/scene.js`.
+- The full-house collision model is loaded once and made fully transparent (`opacity: 0`) in `src/main.js`.
+- Configure collision model transform with `COLLISION_HOUSE_MODEL` in `src/config/scene.js`.
 - Switch between styles by changing `PANORAMA_STYLE` in `src/config/scene.js` (`"s1"` or `"s2"`).

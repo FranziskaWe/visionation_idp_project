@@ -2,8 +2,8 @@ export const RENDER_SETTINGS = {
   fov: 70,
   near: 0.1,
   far: 2000,
-  // Keep this larger than any furniture anchor distance from [0,0,0].
-  // If a model is outside the panorama sphere, the pano surface can hide it.
+  // Keep this larger than any transparent collision-house bounds from [0,0,0].
+  // If the overlay model is outside the panorama sphere, the pano can hide it.
   panoRadius: 50,
   // Increase XR render target sharpness in-headset (higher = sharper + heavier GPU cost).
   xrFramebufferScaleFactor: 1.2,

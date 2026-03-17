@@ -10,7 +10,13 @@ import { createPanoManager } from "./pano/panoManager.js";
 import { createLookControls } from "./navigation/lookControls.js";
 
 import { setupXR } from "./xr/setupXR.js";
-import { PANORAMA_POSES, DEFAULT_PANORAMA_ID, PANORAMA_STYLE } from "./config/scene.js";
+import {
+  PANORAMA_POSES,
+  DEFAULT_PANORAMA_ID,
+  PANORAMA_STYLE,
+  COLLISION_HOUSE_MODEL,
+} from "./config/scene.js";
+import { loadGLB } from "./models/loadGLB.js";
 import * as THREE from "three";
 
 const app = document.querySelector("#app");
@@ -41,6 +47,50 @@ let currentPanoramaStyle = PANORAMA_STYLE;
 
 function panoramaUrlForStyle(baseUrl, style) {
   return baseUrl.replace(/\/assets\/panoramas\/s[0-9]+_/, `/assets/panoramas/${style}_`);
+}
+
+function applyScale(object, scale) {
+  if (Array.isArray(scale)) {
+    const [sx = 1, sy = 1, sz = 1] = scale;
+    object.scale.set(sx, sy, sz);
+    return;
+  }
+  object.scale.setScalar(scale ?? 1);
+}
+
+async function addCollisionHouseModel() {
+  if (!COLLISION_HOUSE_MODEL?.url) return;
+
+  try {
+    const house = await loadGLB(COLLISION_HOUSE_MODEL.url);
+
+    house.traverse((child) => {
+      if (!child.isMesh) return;
+
+      child.frustumCulled = false;
+      child.castShadow = false;
+      child.receiveShadow = false;
+
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((material) => {
+        if (!material) return;
+        material.transparent = true;
+        material.opacity = 0;
+        material.depthWrite = false;
+        material.colorWrite = false;
+        material.needsUpdate = true;
+      });
+    });
+
+    const [x = 0, y = 0, z = 0] = COLLISION_HOUSE_MODEL.position || [0, 0, 0];
+    const [rx = 0, ry = 0, rz = 0] = COLLISION_HOUSE_MODEL.rotation || [0, 0, 0];
+    house.position.set(x, y, z);
+    house.rotation.set(rx, ry, rz);
+    applyScale(house, COLLISION_HOUSE_MODEL.scale);
+    scene.add(house);
+  } catch (error) {
+    console.warn("Failed to load collision house model:", error);
+  }
 }
 
 async function updateXRDiagnostics() {
@@ -110,6 +160,7 @@ window.addEventListener("keydown", (event) => {
 
 styleSelect.value = currentPanoramaStyle;
 await setPanorama(DEFAULT_PANORAMA_ID);
+await addCollisionHouseModel();
 
 setupResize({ camera, renderer });
 

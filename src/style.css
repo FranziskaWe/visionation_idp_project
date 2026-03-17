@@ -100,6 +100,7 @@ canvas {
   appearance: none;
   cursor: pointer;
   text-align: center;
+  text-align-last: center;
 }
 
 #switch-room:hover,

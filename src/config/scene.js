@@ -1,7 +1,15 @@
 export const PANORAMA_STYLE = "s1";
+export const PANORAMA_VIEW_INDEX = 1;
+export const COLLISION_HOUSE_MODEL = {
+  url: "/models/House_Bones_Anc_LR.glb",
+  position: [0, 0, 0],
+  rotation: [0, 0, 0],
+  scale: 1,
+};
 
 function panoramaPath(roomName) {
-  return `/assets/panoramas/${PANORAMA_STYLE}_${roomName}1.jpeg`;
+  // Both styles (s1 and s2) use numbered filenames like *_LivingRoom1.jpeg.
+  return `/assets/panoramas/${PANORAMA_STYLE}_${roomName}${PANORAMA_VIEW_INDEX}.jpeg`;
 }
 
 export const PANORAMA_POSES = {
