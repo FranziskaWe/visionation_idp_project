@@ -25,10 +25,20 @@ const switchRoomBtn = document.querySelector("#switch-room");
 
 const { scene, camera, renderer } = createCore(app);
 
-scene.background = new THREE.Color(0x222222);
+scene.background = new THREE.Color(0x333333);
 
-// Camera starts slightly forward for panorama viewing.
-camera.position.set(0, 1.6, 0.01);
+// red cube test
+/*const testGeo = new THREE.BoxGeometry(1, 1, 1);
+const testMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const testCube = new THREE.Mesh(testGeo, testMat);
+testCube.position.set(0, 0, -3);
+scene.add(testCube);
+
+scene.background = new THREE.Color(0x222222);*/
+
+
+// For panorama viewing, keep the camera near the origin.
+camera.position.set(0, 0, 0);
 
 const panoSphere = createPanoSphere();
 scene.add(panoSphere);
@@ -49,10 +59,51 @@ const lookControls = createLookControls({
 
 const panoramaOrder = Object.keys(PANORAMA_POSES);
 let currentPanoramaId = DEFAULT_PANORAMA_ID;
-let fullSceneLoaded = false;
+
+function toRadians(rotationDeg = [0, 0, 0]) {
+  return rotationDeg.map((value) => THREE.MathUtils.degToRad(value));
+}
 
 function toYaw(rotationDeg = [0, 0, 0]) {
   return THREE.MathUtils.degToRad(rotationDeg[1] ?? 0);
+}
+
+/**
+ * Convert a model placed in shared world coordinates into the
+ * local coordinate frame of the active panorama.
+ *
+ * For a full-scene model rooted at world origin, this effectively
+ * offsets/rotates the model so the pano camera sits at the correct
+ * world capture point.
+ */
+function worldTransformToPanoramaLocal(worldTransform, panoramaPose) {
+  const [wx, wy, wz] = worldTransform.position || [0, 0, 0];
+  const [px, py, pz] = panoramaPose.position || [0, 0, 0];
+  const yaw = toYaw(panoramaPose.rotationDeg);
+
+  const dx = wx - px;
+  const dy = wy - py;
+  const dz = wz - pz;
+
+  const cos = Math.cos(-yaw);
+  const sin = Math.sin(-yaw);
+
+  const lx = dx * cos - dz * sin;
+  const lz = dx * sin + dz * cos;
+  const ly = dy;
+
+  const worldRotation = toRadians(worldTransform.rotationDeg || [0, 0, 0]);
+  const localRotation = [
+    worldRotation[0],
+    worldRotation[1] - yaw,
+    worldRotation[2],
+  ];
+
+  return {
+    position: [lx, ly, lz],
+    rotation: localRotation,
+    scale: worldTransform.scale ?? 1,
+  };
 }
 
 async function setPanorama(panoramaId) {
@@ -60,6 +111,8 @@ async function setPanorama(panoramaId) {
   if (!pose) return;
 
   await panoManager.setPanorama(pose.panorama);
+
+  // Rotate the inside-out sphere so the pano appears oriented correctly.
   panoSphere.rotation.set(0, -toYaw(pose.rotationDeg), 0);
 
   if (roomName) {
@@ -70,34 +123,28 @@ async function setPanorama(panoramaId) {
 }
 
 async function setFullSceneModel() {
-  const model = await fullSceneModelManager.setModel(FULL_SCENE_MODEL);
+  const panoramaPose = PANORAMA_POSES[currentPanoramaId];
+  if (!panoramaPose) return;
 
-  if (!fullSceneLoaded && model) {
+  const localTransform = worldTransformToPanoramaLocal(
+    FULL_SCENE_MODEL.transform || {},
+    panoramaPose
+  );
+
+  const model = await fullSceneModelManager.setModel({
+    ...FULL_SCENE_MODEL,
+    transform: localTransform,
+  });
+
+  if (model) {
     const box = new THREE.Box3().setFromObject(model);
-    const center = new THREE.Vector3();
     const size = new THREE.Vector3();
-
-    box.getCenter(center);
     box.getSize(size);
 
-    console.log("Model center:", center);
+    console.log("Loaded full scene model");
+    console.log("Current panorama:", currentPanoramaId);
+    console.log("Applied transform:", localTransform);
     console.log("Model size:", size);
-
-    if (Number.isFinite(size.x) && Number.isFinite(size.y) && Number.isFinite(size.z)) {
-      const maxDim = Math.max(size.x, size.y, size.z);
-
-      if (maxDim > 0) {
-        // Put the camera at a reasonable spot relative to the model.
-        camera.position.set(
-          center.x,
-          center.y + Math.max(1.6, size.y * 0.25),
-          center.z + Math.max(3, maxDim * 0.75)
-        );
-        camera.lookAt(center);
-      }
-    }
-
-    fullSceneLoaded = true;
   }
 
   return model;
@@ -108,7 +155,7 @@ function switchToNextPanorama() {
   const nextIndex = (currentIndex + 1) % panoramaOrder.length;
   const nextPanoramaId = panoramaOrder[nextIndex];
 
-  void setPanorama(nextPanoramaId);
+  void setPanorama(nextPanoramaId).then(() => setFullSceneModel());
 }
 
 if (switchRoomBtn) {
@@ -143,8 +190,6 @@ void (async () => {
     console.error("Startup failed:", err);
   }
 })();
-
-
 
 /*import "./style.css";
 

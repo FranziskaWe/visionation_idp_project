@@ -18,10 +18,10 @@ export const PANORAMA_POSES = {
 export const DEFAULT_PANORAMA_ID = "livingRoom";
 
 export const FULL_SCENE_MODEL = {
-  url: "/assets/full_model.glb",
+  url: "/assets/model_no_textures.glb",
   transform: {
     position: [0, 0, 0],
-    rotation: [0, 0, 0],
+    rotationDeg: [0, 0, 0],
     scale: 1,
   },
 };
