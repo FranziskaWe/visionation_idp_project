@@ -1,11 +1,11 @@
 export const PANORAMA_STYLE = "s1";
 export const COLLISION_HOUSE_MODEL = {
   url: "/models/model_no_textures.glb",
-  position: [168000, -55000, -8000],
+  position: [193000, -61000, 4000],
   // rotationDeg: [x, y, z] => [pitch, yaw, roll] in degrees
   rotationDeg: [0, 90, 0],
   // Unreal cm -> web meter-like units (first-pass calibration scale).
-  scale: 5.5,
+  scale: 6,
 };
 
 function panoramaPath(viewName) {
