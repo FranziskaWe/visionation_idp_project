@@ -1,3 +1,30 @@
-<body>
-  <script type="module" src="/src/main.js"></script>
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visionation VR Walkthrough</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="ui">
+      <div id="hud">
+        <h1>Visionation VR Walkthrough</h1>
+        <p>Panorama viewer for room-to-room walkthrough.</p>
+        <p>Drag to look around. Press <strong>N</strong> for room and <strong>B</strong> for style, or use controls.</p>
+        <div id="room-name">Living Room</div>
+        <div id="room-row">
+          <button id="switch-room" type="button">Switch Room</button>
+        </div>
+        <div id="style-row">
+          <select id="style-select" aria-label="Select panorama style">
+            <option value="s1">Style: Classic</option>
+            <option value="s2">Style: Modern</option>
+          </select>
+        </div>
+        <div id="xr-diagnostics">XR diagnostics: checking...</div>
+        </div>
+      </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
