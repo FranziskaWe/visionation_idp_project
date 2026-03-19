@@ -44,9 +44,17 @@ const lookControls = createLookControls({ camera, domElement: renderer.domElemen
 const panoramaOrder = Object.keys(PANORAMA_POSES);
 let currentPanoramaId = DEFAULT_PANORAMA_ID;
 let currentPanoramaStyle = PANORAMA_STYLE;
+let houseModel = null;
+const calibrationModes = ["wireframe", "transparent", "hidden"];
+let currentCalibrationModeIndex = 0;
+const UE_TO_WEB_SCALE = 0.01;
 
 function panoramaUrlForStyle(baseUrl, style) {
   return baseUrl.replace(/\/assets\/panoramas\/s[0-9]+_/, `/assets/panoramas/${style}_`);
+}
+
+function panoramaUrlForS1(baseUrl) {
+  return panoramaUrlForStyle(baseUrl, "s1");
 }
 
 function applyScale(object, scale) {
@@ -56,6 +64,89 @@ function applyScale(object, scale) {
     return;
   }
   object.scale.setScalar(scale ?? 1);
+}
+
+function applyHouseCalibrationMode() {
+  if (!houseModel) return;
+  const mode = calibrationModes[currentCalibrationModeIndex];
+
+  houseModel.traverse((child) => {
+    if (!child.isMesh) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      if (!material) return;
+
+      if (mode === "hidden") {
+        material.transparent = true;
+        material.opacity = 0;
+        material.wireframe = false;
+        material.depthWrite = false;
+      } else if (mode === "wireframe") {
+        material.transparent = true;
+        material.opacity = 1;
+        material.wireframe = true;
+        material.depthWrite = false;
+      } else {
+        material.transparent = true;
+        material.opacity = 0.28;
+        material.wireframe = false;
+        material.depthWrite = false;
+      }
+      material.needsUpdate = true;
+    });
+  });
+}
+
+function worldTransformToPanoramaLocal(worldTransform, panoramaPose) {
+  const [wxRaw, wyRaw, wzRaw] = worldTransform.position || [0, 0, 0];
+  const [pxRaw, pyRaw, pzRaw] = panoramaPose.position || [0, 0, 0];
+  const wx = wxRaw * UE_TO_WEB_SCALE;
+  const wy = wyRaw * UE_TO_WEB_SCALE;
+  const wz = wzRaw * UE_TO_WEB_SCALE;
+  const px = pxRaw * UE_TO_WEB_SCALE;
+  const py = pyRaw * UE_TO_WEB_SCALE;
+  const pz = pzRaw * UE_TO_WEB_SCALE;
+  const yaw = toYaw(panoramaPose.rotationDeg);
+
+  const dx = wx - px;
+  const dy = wy - py;
+  const dz = wz - pz;
+
+  const cos = Math.cos(-yaw);
+  const sin = Math.sin(-yaw);
+
+  const lx = dx * cos - dz * sin;
+  const lz = dx * sin + dz * cos;
+  const ly = dy;
+
+  const [wrxDeg = 0, wryDeg = 0, wrzDeg = 0] = worldTransform.rotationDeg || [0, 0, 0];
+  const [wrx, wry, wrz] = [
+    THREE.MathUtils.degToRad(wrxDeg),
+    THREE.MathUtils.degToRad(wryDeg),
+    THREE.MathUtils.degToRad(wrzDeg),
+  ];
+  return {
+    position: [lx, ly, lz],
+    rotation: [wrx, wry - yaw, wrz],
+  };
+}
+
+function updateHouseForPanorama(panoramaPose) {
+  if (!houseModel || !panoramaPose) return;
+
+  const localTransform = worldTransformToPanoramaLocal(
+    {
+      position: COLLISION_HOUSE_MODEL.position || [0, 0, 0],
+      rotationDeg: COLLISION_HOUSE_MODEL.rotationDeg || [0, 0, 0],
+    },
+    panoramaPose
+  );
+
+  const [x, y, z] = localTransform.position;
+  const [rx, ry, rz] = localTransform.rotation;
+  houseModel.position.set(x, y, z);
+  houseModel.rotation.set(rx, ry, rz);
+  applyScale(houseModel, COLLISION_HOUSE_MODEL.scale);
 }
 
 async function addCollisionHouseModel() {
@@ -70,24 +161,18 @@ async function addCollisionHouseModel() {
       child.frustumCulled = false;
       child.castShadow = false;
       child.receiveShadow = false;
-
       const materials = Array.isArray(child.material) ? child.material : [child.material];
       materials.forEach((material) => {
         if (!material) return;
-        material.transparent = true;
-        material.opacity = 0;
-        material.depthWrite = false;
-        material.colorWrite = false;
+        material.side = THREE.DoubleSide;
         material.needsUpdate = true;
       });
     });
 
-    const [x = 0, y = 0, z = 0] = COLLISION_HOUSE_MODEL.position || [0, 0, 0];
-    const [rx = 0, ry = 0, rz = 0] = COLLISION_HOUSE_MODEL.rotation || [0, 0, 0];
-    house.position.set(x, y, z);
-    house.rotation.set(rx, ry, rz);
-    applyScale(house, COLLISION_HOUSE_MODEL.scale);
+    houseModel = house;
     scene.add(house);
+    updateHouseForPanorama(PANORAMA_POSES[currentPanoramaId]);
+    applyHouseCalibrationMode();
   } catch (error) {
     console.warn("Failed to load collision house model:", error);
   }
@@ -123,10 +208,17 @@ async function setPanorama(panoramaId) {
   const pose = PANORAMA_POSES[panoramaId];
   if (!pose) return;
 
-  await panoManager.setPanorama(panoramaUrlForStyle(pose.panorama, currentPanoramaStyle));
+  const preferredUrl = panoramaUrlForStyle(pose.panorama, currentPanoramaStyle);
+  try {
+    await panoManager.setPanorama(preferredUrl);
+  } catch {
+    // Some views only exist in s1. Fallback keeps navigation working.
+    await panoManager.setPanorama(panoramaUrlForS1(pose.panorama));
+  }
   panoSphere.rotation.set(0, -toYaw(pose.rotationDeg), 0);
   roomName.textContent = pose.name;
   currentPanoramaId = panoramaId;
+  updateHouseForPanorama(pose);
 }
 
 function switchToNextPanorama() {
@@ -143,6 +235,12 @@ function switchToNextStyle() {
   void setPanorama(currentPanoramaId);
 }
 
+function switchCalibrationMode() {
+  currentCalibrationModeIndex =
+    (currentCalibrationModeIndex + 1) % calibrationModes.length;
+  applyHouseCalibrationMode();
+}
+
 switchRoomBtn.addEventListener("click", switchToNextPanorama);
 styleSelect.addEventListener("change", () => {
   currentPanoramaStyle = styleSelect.value;
@@ -155,6 +253,9 @@ window.addEventListener("keydown", (event) => {
   }
   if (event.key.toLowerCase() === "b") {
     switchToNextStyle();
+  }
+  if (event.key.toLowerCase() === "c") {
+    switchCalibrationMode();
   }
 });
 

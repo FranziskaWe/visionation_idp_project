@@ -1,10 +1,10 @@
-# Visionation WebXR Living Room Scene
+# Visionation WebXR Panorama Calibration Viewer
 
-A beginner-friendly Vite + vanilla JS + Three.js WebXR project with:
+A Vite + vanilla JS + Three.js WebXR project with:
 - 1 reusable panorama sphere,
-- 2 styles: classic, modern,
-- each style covers 4 spaces: kitchen (1 pano), living room (3 panos), hallway (2 panos), bedroom (3 panos),
-- 1 transparent full-house GLB overlay for collision/raycasting only.
+- 2 panorama styles (`s1` classic, `s2` modern),
+- 9 panorama viewpoints (kitchen, living room x3, hallway x2, bedroom x3),
+- 1 full-house GLB framework overlay for alignment calibration.
 
 This is monoscopic 360 (3DoF) and Quest 3 ready through `VRButton`.
 
@@ -22,23 +22,29 @@ If immersive mode does not appear, use HTTPS dev mode:
 
 ## Controls
 - Desktop/Mobile: drag to look around.
-- Switch panorama pose: press `N`.
+- Switch panorama pose: press `N` or click `Switch Room`.
+- Switch style: press `B` or choose from style list (`Classic`, `Modern`).
+- Switch house calibration display mode: press `C` (`wireframe -> transparent -> hidden`).
 - VR: enter with the `VR` button (`VRButton`).
 
 ## Assets Used
-- Naming convention of panorama file: 
-  `{style_index}_{space}{index_in_space}.jpeg`
+- Panorama naming convention:
+  `{style}_{view}.jpeg`
+  examples: `s1_LivingRoom1.jpeg`, `s2_Kitchen1.jpeg`
+- House framework model:
+  `public/models/model_no_textures.glb`
 
 ## Main Files
-- `src/config/scene.js` single-scene
-- `src/main.js` app wiring, panorama switching, collision house model setup.
+- `src/config/scene.js` panorama pose list + house model transform config.
+- `src/main.js` panorama/style switching, style fallback, house calibration rendering.
 - `src/pano/*` panorama sphere + texture manager.
-- `src/models/loadGLB.js` GLB loader used for the transparent collision house model.
+- `src/models/loadGLB.js` GLB loader used for the house model.
 - `src/xr/*` WebXR button + controllers.
 - `src/navigation/lookControls.js` drag-to-look controls.
 
-## Notes For Beginners
+## Calibration Notes
 - The panorama sphere is created once in `src/pano/createPanoSphere.js`.
-- The full-house collision model is loaded once and made fully transparent (`opacity: 0`) in `src/main.js`.
-- Configure collision model transform with `COLLISION_HOUSE_MODEL` in `src/config/scene.js`.
-- Switch between styles by changing `PANORAMA_STYLE` in `src/config/scene.js` (`"s1"` or `"s2"`).
+- House model transform is configured in `COLLISION_HOUSE_MODEL` in `src/config/scene.js`.
+- `COLLISION_HOUSE_MODEL.scale` defaults to `0.01` (UE cm -> web meter-like units).
+- Panorama camera poses are configured in `PANORAMA_POSES` (position + yaw).
+- When a selected style asset is missing for a view, runtime falls back to the `s1` panorama for that view.
