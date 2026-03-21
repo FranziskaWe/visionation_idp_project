@@ -113,6 +113,36 @@ function applyScale(object, scale) {
   object.scale.setScalar(scale ?? 1);
 }
 
+
+// Temporary calibration — add after houseModel is loaded
+let calibOffset = { x: 0, y: 0, z: 0, scale: 1 };
+
+function applyCalibOffset() {
+  if (!houseModel) return;
+  const base = uePositionToThree(...COLLISION_HOUSE_MODEL.position)
+    .sub(uePositionToThree(...PANORAMA_POSES[currentPanoramaId].position));
+  houseModel.position.set(
+    base.x + calibOffset.x,
+    base.y + calibOffset.y,
+    base.z + calibOffset.z
+  );
+  houseModel.scale.setScalar(calibOffset.scale);
+  console.log("offset:", calibOffset);
+}
+
+window.addEventListener("keydown", (e) => {
+  const step = 0.5;
+  if (e.key === "ArrowRight") calibOffset.x += step;
+  if (e.key === "ArrowLeft")  calibOffset.x -= step;
+  if (e.key === "ArrowUp")    calibOffset.y += step;
+  if (e.key === "ArrowDown")  calibOffset.y -= step;
+  if (e.key === "u")          calibOffset.z += step;
+  if (e.key === "j")          calibOffset.z -= step;
+  if (e.key === "+")          calibOffset.scale *= 1.1;
+  if (e.key === "-")          calibOffset.scale *= 0.9;
+  applyCalibOffset();
+});
+
 function applyHouseCalibrationMode() {
   if (!houseModel) return;
   const mode = calibrationModes[currentCalibrationModeIndex];
@@ -198,6 +228,21 @@ function worldTransformToPanoramaLocal(worldTransform, panoramaPose) {
 function updateHouseForPanorama(panoramaPose) {
   if (!houseModel || !panoramaPose) return;
 
+  const housePos = uePositionToThree(...COLLISION_HOUSE_MODEL.position);
+  const cameraPos = uePositionToThree(...panoramaPose.position);
+
+  const relativePos = housePos.clone().sub(cameraPos);
+  houseModel.position.copy(relativePos);
+
+  const [px, py, pz] = COLLISION_HOUSE_MODEL.rotationDeg;
+  houseModel.rotation.copy(ueRotationToThree(px, py, pz));
+
+  applyScale(houseModel, COLLISION_HOUSE_MODEL.scale);
+}
+
+/*function updateHouseForPanorama(panoramaPose) {
+  if (!houseModel || !panoramaPose) return;
+
   // Convert both positions from UE space to Three.js space
   const housePos = uePositionToThree(...COLLISION_HOUSE_MODEL.position);
   const cameraPos = uePositionToThree(...panoramaPose.position);
@@ -213,7 +258,7 @@ function updateHouseForPanorama(panoramaPose) {
   // Apply scale (UE cm → Three units already handled above, 
   // but if your GLB is exported in UE units you may still need this)
   applyScale(houseModel, COLLISION_HOUSE_MODEL.scale);
-}
+}*/
 
 async function addCollisionHouseModel() {
   if (!COLLISION_HOUSE_MODEL?.url) return;

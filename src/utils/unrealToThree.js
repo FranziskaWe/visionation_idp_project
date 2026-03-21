@@ -7,12 +7,19 @@ import * as THREE from "three";
 const UE_SCALE = 0.01;
 
 export function uePositionToThree(ueX, ueY, ueZ) {
-  return new THREE.Vector3(
-    ueX * UE_SCALE,   // X → X
-    ueZ * UE_SCALE,   // Z → Y (up)
-   -ueY * UE_SCALE    // -Y → Z
-  );
-}
+    return new THREE.Vector3(
+       ueX * 0.01,   // X → X (cm to meters)
+       ueZ * 0.01,   // Z → Y (up)
+      -ueY * 0.01    // -Y → Z
+    );
+  }
+/*export function uePositionToThree(ueX, ueY, ueZ) {
+    return new THREE.Vector3(
+       ueX,   // X → X
+       ueZ,   // Z → Y (up)
+      -ueY    // -Y → Z
+    );
+  }*/
 
 export function ueRotationToThree(pitchDeg, yawDeg, rollDeg) {
   // Unreal rotation order: Yaw (Z), Pitch (Y), Roll (X)
