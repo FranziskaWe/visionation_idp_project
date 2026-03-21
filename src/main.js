@@ -9,6 +9,9 @@ import { createPanoManager } from "./pano/panoManager.js";
 
 import { createLookControls } from "./navigation/lookControls.js";
 
+import { uePositionToThree, ueRotationToThree } from "./utils/unrealToThree.js";
+import { createHotspotManager } from "./navigation/hotspotManager.js";
+
 import { setupXR } from "./xr/setupXR.js";
 import {
   PANORAMA_POSES,
@@ -27,6 +30,9 @@ const styleSelect = document.querySelector("#style-select");
 const xrDiagnostics = document.querySelector("#xr-diagnostics");
 
 const { scene, camera, renderer } = createCore(app);
+
+// Add this line:
+const hotspotManager = createHotspotManager(scene);
 
 // Panorama sphere is created once and reused.
 const panoSphere = createPanoSphere();
@@ -48,6 +54,47 @@ let houseModel = null;
 const calibrationModes = ["wireframe", "transparent", "hidden"];
 let currentCalibrationModeIndex = 0;
 const UE_TO_WEB_SCALE = 0.01;
+
+
+// After creating hotspotManager...
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let hoveredHotspot = null;
+
+function getHotspotAtPointer(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(hotspotManager.getHotspots(), true);
+  if (hits.length === 0) return null;
+
+  // Walk up to the Group that has userData.type === "hotspot"
+  let obj = hits[0].object;
+  while (obj && obj.userData.type !== "hotspot") obj = obj.parent;
+  return obj ?? null;
+}
+
+renderer.domElement.addEventListener("pointermove", (event) => {
+  if (renderer.xr.isPresenting) return;
+  const hit = getHotspotAtPointer(event.clientX, event.clientY);
+
+  if (hit !== hoveredHotspot) {
+    hoveredHotspot?.userData.setActive(false);
+    hoveredHotspot = hit;
+    hoveredHotspot?.userData.setActive(true);
+    renderer.domElement.style.cursor = hit ? "pointer" : "";
+  }
+});
+
+renderer.domElement.addEventListener("click", (event) => {
+  if (renderer.xr.isPresenting) return;
+  const hit = getHotspotAtPointer(event.clientX, event.clientY);
+  if (hit?.userData.target) {
+    void setPanorama(hit.userData.target);
+  }
+});
 
 function panoramaUrlForStyle(baseUrl, style) {
   return baseUrl.replace(/\/assets\/panoramas\/s[0-9]+_/, `/assets/panoramas/${style}_`);
@@ -131,8 +178,7 @@ function worldTransformToPanoramaLocal(worldTransform, panoramaPose) {
   };
 }
 
-function updateHouseForPanorama(panoramaPose) {
-  if (!houseModel || !panoramaPose) return;
+/*function updateHouseForPanorama(panoramaPose) {
 
   const localTransform = worldTransformToPanoramaLocal(
     {
@@ -146,6 +192,26 @@ function updateHouseForPanorama(panoramaPose) {
   const [rx, ry, rz] = localTransform.rotation;
   houseModel.position.set(x, y, z);
   houseModel.rotation.set(rx, ry, rz);
+  applyScale(houseModel, COLLISION_HOUSE_MODEL.scale);
+}*/
+
+function updateHouseForPanorama(panoramaPose) {
+  if (!houseModel || !panoramaPose) return;
+
+  // Convert both positions from UE space to Three.js space
+  const housePos = uePositionToThree(...COLLISION_HOUSE_MODEL.position);
+  const cameraPos = uePositionToThree(...panoramaPose.position);
+
+  // The house position relative to the camera (user is always at origin)
+  const relativePos = housePos.clone().sub(cameraPos);
+  houseModel.position.copy(relativePos);
+
+  // Apply house rotation, accounting for coordinate system flip
+  const [px, py, pz] = COLLISION_HOUSE_MODEL.rotationDeg;
+  houseModel.rotation.copy(ueRotationToThree(px, py, pz));
+
+  // Apply scale (UE cm → Three units already handled above, 
+  // but if your GLB is exported in UE units you may still need this)
   applyScale(houseModel, COLLISION_HOUSE_MODEL.scale);
 }
 
@@ -179,6 +245,7 @@ async function addCollisionHouseModel() {
 }
 
 async function updateXRDiagnostics() {
+  return;
   const lines = [];
   lines.push(`secureContext: ${window.isSecureContext ? "yes" : "no"}`);
 
@@ -215,10 +282,38 @@ async function setPanorama(panoramaId) {
     // Some views only exist in s1. Fallback keeps navigation working.
     await panoManager.setPanorama(panoramaUrlForS1(pose.panorama));
   }
-  panoSphere.rotation.set(0, -toYaw(pose.rotationDeg), 0);
+
+  const yawRad = THREE.MathUtils.degToRad(-pose.rotationDeg[1]); // flip for RH coords
+  panoSphere.rotation.set(0, yawRad, 0);
+
   roomName.textContent = pose.name;
   currentPanoramaId = panoramaId;
   updateHouseForPanorama(pose);
+
+  hoveredHotspot = null; // clear hover state on transition
+
+  hotspotManager.setHotspots([
+    {
+      id: "debug",
+      label: "Debug",
+      target: "kitchen1",
+      position: [0, 0, -2], // 2 meters straight ahead in Three.js space
+    }
+  ]);
+
+  /*hotspotManager.setHotspots(
+    (pose.hotspots ?? []).map((hs) => ({
+      ...hs,
+      position: uePositionToThree(...hs.position)   // ← converts UE cm → Three.js space
+        .sub(uePositionToThree(...pose.position))    // ← relative to camera
+        .toArray(),
+    }))
+  );*/
+
+  /*panoSphere.rotation.set(0, -toYaw(pose.rotationDeg), 0);
+  roomName.textContent = pose.name;
+  currentPanoramaId = panoramaId;
+  updateHouseForPanorama(pose);*/
 }
 
 function switchToNextPanorama() {
@@ -265,7 +360,17 @@ await addCollisionHouseModel();
 
 setupResize({ camera, renderer });
 
+
 const loop = createLoop({
+  renderer, scene, camera,
+  update: () => {
+    lookControls.setEnabled(!renderer.xr.isPresenting);
+    lookControls.update();
+    hotspotManager.update(camera); // ← your partner's update already takes camera
+  },
+});
+
+/*const loop = createLoop({
   renderer,
   scene,
   camera,
@@ -273,7 +378,7 @@ const loop = createLoop({
     lookControls.setEnabled(!renderer.xr.isPresenting);
     lookControls.update();
   },
-});
+});*/
 
 renderer.setAnimationLoop(loop);
 

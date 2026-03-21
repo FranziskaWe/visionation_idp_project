@@ -1,9 +1,9 @@
 export const PANORAMA_STYLE = "s1";
 export const COLLISION_HOUSE_MODEL = {
   url: "/models/model_no_textures.glb",
-  position: [193000, -61000, 4000],
+  position: [-20000, -200000, -40000], //[193000, -61000, 4000],
   // rotationDeg: [x, y, z] => [pitch, yaw, roll] in degrees
-  rotationDeg: [0, 90, 0],
+  rotationDeg: [0, 180, 0],
   // Unreal cm -> web meter-like units (first-pass calibration scale).
   scale: 6,
 };
@@ -19,6 +19,14 @@ export const PANORAMA_POSES = {
     panorama: panoramaPath("Kitchen1"),
     position: [48.676407, -272.037245, 110.92365],
     rotationDeg: [0, 90, 0],
+    hotspots: [
+      {
+        id: "to-living-room",
+        label: "Living Room",
+        target: "livingRoom1",
+        position: [4500, -27000, 10800], // raw UE world cm
+      },
+    ],
   },
   livingRoom1: {
     id: "livingRoom1",
